@@ -1,0 +1,17 @@
+cluster_addr  = "https://{{ ansible_enp0s9.ipv4.address }}:8201"
+api_addr      = "https://{{ ansible_enp0s8.ipv4.address }}:8200"
+disable_mlock = true
+
+listener "tcp" {
+  address            = "0.0.0.0:8200"
+  tls_cert_file      = "/opt/vault/tls/tls.crt"
+  tls_key_file       = "/opt/vault/tls/tls.key"
+  #tls_client_ca_file = "/opt/vault/tls/vault-ca.pem"
+}
+
+storage "raft" {
+  path    = "/opt/vault/data"
+  node_id = "{{ ansible_hostname }}"
+}
+
+ui = true

@@ -1,0 +1,34 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.1.0
+  hooks:
+    - id: trailing-whitespace
+      args: [--markdown-linebreak-ext=md]
+    - id: check-added-large-files
+    - id: check-json
+    - id: check-merge-conflict
+    - id: check-yaml
+    - id: detect-private-key
+    - id: end-of-file-fixer
+
+- repo: https://github.com/gruntwork-io/pre-commit
+  rev: v0.1.17
+  hooks:
+    - id: tflint
+      args:
+        - "--module"
+        - "--config=.tflint.hcl"
+    - id: terraform-validate
+    - id: terraform-fmt
+
+- repo: https://github.com/terraform-docs/terraform-docs
+  rev: "v0.16.0"
+  hooks:
+    - id: terraform-docs-system
+      args: ["markdown", "--output-file", "README.md", "./"]
+
+- repo: https://github.com/bridgecrewio/checkov
+  rev: "2.0.812"
+  hooks:
+  - id: checkov
+    args: ["-d", "./", "--skip-check", "CKV_AZURE_119,CKV_AZURE_10"]

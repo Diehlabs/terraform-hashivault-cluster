@@ -1,0 +1,61 @@
+VBOX_HOST_USERID   = "chris"
+GITHUB_USER_ID     = "cultclassik"
+HOST_PUB_IFACE     = "enp3s0"
+VM_PUB_NET         = "192.168.1."
+VM_INT_NET         = "10.241.0."
+IP_START           = 100
+VM_INT_IFACE       = "enp0s9"
+VM_PUB_IFACE       = "enp0s8"
+MYBOX              = "ubuntu/focal64" #"ubuntu/bionic64" # various issues with focal, going back to bionic
+VM_USERID          = "vagrant"
+VMS = {
+  :nodes => {
+    :hosts    => [ "vault01", "vault02", "vault03" ],
+    :cpu      => 2,
+    :ram      => 3000
+  }
+}
+
+# Run Ansible playbook to configure all VMs
+def runansible(node)
+  node.vm.provision "ansible" do |ansible|
+    ansible.compatibility_mode = "2.0"
+    ansible.limit = "all"
+    ansible.playbook = "./vagrant.yml"
+    ansible.groups = {
+      "all:vars"       => {
+          "private_if" => VM_INT_IFACE,
+          "public_if" => VM_PUB_IFACE,
+          "local_id" => VBOX_HOST_USERID,
+          "github_userid" => GITHUB_USER_ID,
+          "user_id" => VM_USERID,
+        }
+      }
+  end
+end
+
+# Create VMs for Vault cluster nodes
+Vagrant.configure(2) do |config|
+  VMS[:nodes][:hosts].each_with_index do |hostname, index|
+    config.vm.define hostname do |node|
+      node.vm.box = MYBOX
+      node.vm.hostname = hostname
+      node.vm.network "public_network", ip: VM_PUB_NET + (IP_START + 10 + index).to_s, bridge: HOST_PUB_IFACE
+      node.vm.network "private_network", ip: VM_INT_NET + (IP_START + 10 + index).to_s
+      node.vm.provider "virtualbox" do |vb|
+        vb.linked_clone = true
+        vb.name = node.vm.hostname
+        vb.customize ["modifyvm", :id, "--memory", VMS[:nodes][:ram]]
+        vb.customize ["modifyvm", :id, "--cpus", VMS[:nodes][:cpu]]
+      end
+      # run the ansible provisioner function against all vms if this is the last vm to be created
+      if index == (VMS[:nodes][:hosts].length()-1)
+        runansible(node)
+      end
+    end
+  end
+end
+
+# config.trigger.after :destroy do |trigger|
+#   ...
+# end
